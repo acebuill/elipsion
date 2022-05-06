@@ -44,7 +44,7 @@ def startprocessblock(processname):
     while True:
         try:
             os.kill(getprogramprocess(processname).pid, 9)
-        except:
+        except IndexError:
             time.sleep(1)
 
 
