@@ -65,7 +65,7 @@ def limitprogramruntime(processname, limit):
         limitprogramruntime(processname, limit)
     cache = parseepsilonconf()
     rawruntime = time.time() - process.create_time()
-    extratime = cache[1] if needstobecontinued(runtime, cache) else 0
+    extratime = cache[1] if needstobecontinued(rawruntime, cache) else 0
     runtime = rawruntime + extratime
     if exceedslimit(runtime, limit):
         startprocessblock(processname)
@@ -85,4 +85,4 @@ if __name__ == "__main__":
     args = docopt.docopt(__doc__)
     ensurecachedirexists()
     ensurecachefileexists()
-    limitprogramruntime(args["<processname>"], args["<limit>"])
+    limitprogramruntime(args["<processname>"], int(args["<limit>"]))
