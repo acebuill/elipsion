@@ -1,5 +1,14 @@
-"0 0"
+"""
+elipsion
+    
+Usage:
+    elipsion <processname> <limit>
+
+Options:
+  -h --help     Show this screen.
+"""
 import psutil
+import docopt
 from datetime import datetime
 import time
 from pathlib import Path
@@ -16,7 +25,7 @@ ensurecachedirexists = lambda: Path(CACHEDIR).mkdir(
 cachefileexists = lambda: os.access(CACHEFILE, os.F_OK)
 
 ensurecachefileexists = (
-    lambda: writetocachefile(__doc__) if not cachefileexists() else ""
+    lambda: writetocachefile("0 0") if not cachefileexists() else ""
 )
 
 getprogramprocess = lambda programname: [
@@ -55,9 +64,9 @@ def limitprogramruntime(processname, limit):
         time.sleep(1)
         limitprogramruntime(processname, limit)
     cache = parseepsilonconf()
-    runtime = time.time() - process.create_time()
+    rawruntime = time.time() - process.create_time()
     extratime = cache[1] if needstobecontinued(runtime, cache) else 0
-    runtime = runtime + extratime
+    runtime = rawruntime + extratime
     if exceedslimit(runtime, limit):
         startprocessblock(processname)
     while not exceedslimit(runtime, limit):
@@ -73,9 +82,7 @@ def limitprogramruntime(processname, limit):
 
 
 if __name__ == "__main__":
+    args = docopt.docopt(__doc__)
     ensurecachedirexists()
     ensurecachefileexists()
-    try:
-        limitprogramruntime("telegram-desktop", 3400)
-    except KeyboardInterrupt:
-        sys.exit(1)
+    limitprogramruntime(args["<processname>"], args["<limit>"])
