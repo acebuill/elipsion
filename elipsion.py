@@ -16,16 +16,17 @@ import os
 import sys
 
 CACHEDIR = "/home/" + os.getlogin() + "/.cache/elipsion"
-CACHEFILE = CACHEDIR + "/elipsion.txt"
+
+cachefilepath = lambda procname : f"{CACHEDIR}/{procname}.txt"
 
 ensurecachedirexists = lambda: Path(CACHEDIR).mkdir(
     parents=True, exist_ok=True
 )
 
-cachefileexists = lambda: os.access(CACHEFILE, os.F_OK)
+cachefileexists = lambda procname: os.access(f"{CACHEDIR}/{procname}.txt", os.F_OK)
 
 ensurecachefileexists = (
-    lambda: writetocachefile("0 0") if not cachefileexists() else ""
+    lambda cachepath: writetofile(cachepath, "0 0") if not cachefileexists(cachepath) else ""
 )
 
 getprogramprocess = lambda programname: [
@@ -34,10 +35,10 @@ getprogramprocess = lambda programname: [
     if programprocess.name() == programname
 ][0]
 
-writetocachefile = lambda str_: open(CACHEFILE, "w").write(str_)
+writetofile = lambda fname, str_: open(fname, "w").write(str_)
 
-parseepsilonconf = lambda: list(
-    map(lambda i: abs(float(i)), open(CACHEFILE, "r").read().split(" "))
+parseepsiloncache = lambda cachefilepath: list(
+    map(lambda i: abs(float(i)), open(cachefilepath, "r").read().split(" "))
 )
 
 needstobecontinued = (
@@ -57,13 +58,13 @@ def startprocessblock(processname):
             time.sleep(1)
 
 
-def limitprogramruntime(processname, limit):
+def limitprogramruntime(processname, limit, cachepath):
     try:
         process = getprogramprocess(processname)
     except IndexError:
         time.sleep(1)
-        limitprogramruntime(processname, limit)
-    cache = parseepsilonconf()
+        limitprogramruntime(processname, limit, cachepath)
+    cache = parseepsiloncache(cachepath)
     rawruntime = time.time() - process.create_time()
     extratime = cache[1] if needstobecontinued(rawruntime, cache) else 0
     runtime = rawruntime + extratime
@@ -73,9 +74,9 @@ def limitprogramruntime(processname, limit):
         try:
             _ = getprogramprocess(processname)
             runtime += 1
-            writetocachefile(str(datetime.now().day) + " " + str(runtime))
+            writetofile(cachepath, f"{datetime.now().day} {runtime}")
         except IndexError:
-            limitprogramruntime(processname, limit)
+            limitprogramruntime(processname, limit, cachepath)
         finally:
             time.sleep(1)
     startprocessblock(processname)
@@ -83,6 +84,7 @@ def limitprogramruntime(processname, limit):
 
 if __name__ == "__main__":
     args = docopt.docopt(__doc__)
+    CACHE_FILE_PATH = cachefilepath(args["<processname>"])
     ensurecachedirexists()
-    ensurecachefileexists()
-    limitprogramruntime(args["<processname>"], int(args["<limit>"]))
+    ensurecachefileexists(CACHE_FILE_PATH)
+    limitprogramruntime(args["<processname>"], int(args["<limit>"]), CACHE_FILE_PATH)
